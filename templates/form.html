@@ -1,0 +1,55 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block styles %}
+{{super()}}
+<link rel="stylesheet"
+      href="{{url_for('.static', filename='my-style.css')}}">
+{% endblock %}
+
+{% block javascript %}
+    <script type="text/javascript">
+        {% include "myscript.js" %}
+    </script>
+    <!-- The contents of myscript.js will be loaded inside the script tag -->
+{% endblock %}
+
+{% block title %}
+    {% if title %}{{ title }} - Wikidata KG{% else %}Wikidata KG{% endif %}
+{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">Wikidata KG</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="#">Home</a></li>
+      <li><a href="#">About</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right">
+      <li><a href="#"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+    </ul>
+  </div>
+</nav>
+
+{% endblock %}
+
+{% block content %}
+<div class="jumbotron card card-block">
+    <div class="input-group input-group mb-3p">
+        <form action="{{ url_for('submit') }}" method=get>
+            <textarea name="items" placeholder="Enter Wikidata items"></textarea>
+            <input type="submit" value="Submit items">
+            <input type="reset">
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    <div class="container">
+      <p class="m-0 text-center text-white">Contact: Andrew Lih</p>
+    </div>
+    <!-- /.container -->
+{% endblock %}
