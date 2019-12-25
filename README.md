@@ -11,6 +11,6 @@ wd:Q1234
 <br>
 wd:Q5678
 
-This install uses Python, Flask and Bootstrap
+Uses Python, Flask and Bootstrap
 
 Contact: Wikipedia User:Fuzheado
