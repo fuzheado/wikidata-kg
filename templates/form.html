@@ -37,9 +37,18 @@
 
 {% block content %}
 <div class="jumbotron card card-block">
+Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line, with wd: prefix.
+    Example:
+    <ul>
+        <li>
+        <a href="/submit?items=wd:Q7186%20wd:Q169470%20wd:Q44585%20wd:Q38104">Marie Curie</a>
+        </li>
+    </ul>
     <div class="input-group input-group mb-3p">
         <form action="{{ url_for('submit') }}" method=get>
-            <textarea name="items" placeholder="Enter Wikidata items"></textarea>
+            <label>
+<textarea name="items" placeholder="Enter Wikidata items, one per line, in the form of wd:Q123"></textarea>
+            </label>
             <input type="submit" value="Submit items">
             <input type="reset">
         </form>

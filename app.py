@@ -36,11 +36,6 @@ kg_sparql_template_in_url = 'https://query.wikidata.org/embed.html#%23defaultVie
 
 
 @app.route('/')
-def hello_world():
-    return 'Hello World!'
-
-
-@app.route('/form')
 def form():
     return render_template('form.html')
 
