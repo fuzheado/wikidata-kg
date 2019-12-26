@@ -3,6 +3,8 @@ from flask_bootstrap import Bootstrap
 import os
 import yaml
 import urllib.parse
+import requests
+import qutils
 
 app = Flask(__name__)
 
@@ -26,6 +28,8 @@ SELECT ?item1 ?image ?item1Label ?item2 ?image2 ?item2Label ?edgeLabel WHERE {{
 }}
 '''
 
+# URL of a SPARQL query to find the knowledge graph links
+#   two {} placeholders exist to substitute in the list of wd:Q123 like items
 kg_sparql_template_in_url = 'https://query.wikidata.org/embed.html#%23defaultView%3AGraph%0ASELECT%20%3Fitem1%20' \
                             '%3Fimage%20%3Fitem1Label%20%3Fitem2%20%3Fimage2%20%3Fitem2Label%20%3FedgeLabel%20WHERE' \
                             '%20%7B%0AVALUES%20%3Fitem1%20%7B{}%7D%0AVALUES%20%3Fitem2%20%7B{' \
@@ -40,7 +44,8 @@ def form():
     return render_template('form.html')
 
 
-def redirect_to_kg(items):
+def redirect_to_kg(items, action='redirect'):
+    """Take a string of items, one per line, turn them into a list of Q items and send to SPARQL"""
     # params = '{} request content: {}'.format(request.method, items)
     # sparql_request = kg_sparql_template.format(items, items)
     # TODO Extract each line as a different item into a dict
@@ -48,9 +53,20 @@ def redirect_to_kg(items):
     # TODO handle raw Q numbers - Q1234
     # TODO handle article names with lang - en:Cambridge
     # TODO handle article names w/o lang, but default lang - Cambridge
-    quoted_items = urllib.parse.quote(items.replace('\n', ' ').replace('\r', ''))
+    # TODO handle pagepile IDs
+    #   API - https://tools.wmflabs.org/pagepile/api.php?id=27684&action=get_data&doit&format=json
+    # TODO Provide option to interpret raw numbers as Pagepile IDs or QIDs
+    # quoted_items = urllib.parse.quote(items.replace('\n', ' ').replace('\r', ''))
     # Use redirect to send folks to Wikidata Query
-    return redirect(kg_sparql_template_in_url.format(quoted_items, quoted_items))
+
+    q_list = qutils.item_string_to_wdq_list(items)
+    quoted_items = ' '.join(q_list)
+
+    target_url = kg_sparql_template_in_url.format(quoted_items, quoted_items)
+    if action == 'print':
+        print(target_url)
+    else:
+        return redirect(target_url)
 
 
 @app.route('/submit', methods=['GET', 'POST'])
@@ -65,7 +81,6 @@ def submit():
         return 'No valid GET or POST request'
 
     return redirect_to_kg(textarea_content)
-
 
 if __name__ == '__main__':
     app.run()
