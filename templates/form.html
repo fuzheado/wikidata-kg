@@ -47,9 +47,16 @@ Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line,
     <div class="input-group input-group mb-3p">
         <form action="{{ url_for('submit') }}" method=get>
             <label>
-<textarea name="items" placeholder="Enter Wikidata items, one per line, in the form of wd:Q123"></textarea>
+<textarea name="items" placeholder="Enter objects (Wikidata items, Wikipedia article titles or Pagepile IDs) one per line. Examples:
+Q5
+wd:Q1028181
+en:Baton Rouge
+pagepile:27688
+"></textarea>
+<textarea name="exclusions" placeholder="Enter objects to exclude from the graph"></textarea>
             </label>
-            <input type="submit" value="Submit items">
+            <input type="submit" name="action" value="process">
+            <input type="submit" name="action" value="print">
             <input type="reset">
         </form>
     </div>

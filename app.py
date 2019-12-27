@@ -42,23 +42,16 @@ kg_sparql_template_in_url = 'https://query.wikidata.org/embed.html#%23defaultVie
 @app.route('/')
 def form():
     return render_template('form.html')
+    # TODO - pass in links to common tools - Wikidata Query, Pagepile, Petscan
 
 
 def redirect_to_kg(items, action='redirect'):
-    """Take a string of items, one per line, turn them into a list of Q items and send to SPARQL"""
-    # params = '{} request content: {}'.format(request.method, items)
-    # sparql_request = kg_sparql_template.format(items, items)
-    # TODO Extract each line as a different item into a dict
-    # TODO Handle different types of items in textarea - morph to wd:Q123 format
-    # TODO handle raw Q numbers - Q1234
-    # TODO handle article names with lang - en:Cambridge
-    # TODO handle article names w/o lang, but default lang - Cambridge
-    # TODO handle pagepile IDs
-    #   API - https://tools.wmflabs.org/pagepile/api.php?id=27684&action=get_data&doit&format=json
+    """
+    Take a string of items, one per line, turn them into a list of Q items and send to SPARQL
+    """
     # TODO Provide option to interpret raw numbers as Pagepile IDs or QIDs
-    # quoted_items = urllib.parse.quote(items.replace('\n', ' ').replace('\r', ''))
-    # Use redirect to send folks to Wikidata Query
 
+    # Convert textarea submission to list of wd:Q123 items
     q_list = qutils.item_string_to_wdq_list(items)
     quoted_items = ' '.join(q_list)
 
@@ -66,6 +59,7 @@ def redirect_to_kg(items, action='redirect'):
     if action == 'print':
         print(target_url)
     else:
+        # Redirect user's browser to Wikidata Query
         return redirect(target_url)
 
 
@@ -80,7 +74,9 @@ def submit():
     else:
         return 'No valid GET or POST request'
 
+    # [x for x in l1 if x not in exclusions]
     return redirect_to_kg(textarea_content)
+
 
 if __name__ == '__main__':
     app.run()

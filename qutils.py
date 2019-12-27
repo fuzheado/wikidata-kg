@@ -2,7 +2,7 @@ import requests
 import re
 
 """
-Functions to help with Wikidata Q items, Pagepiles and Wikipedia
+Utility functions to help with Wikidata Q items, Pagepiles and Wikipedia
 """
 
 pagepile_api_url = 'https://tools.wmflabs.org/pagepile/api.php'
@@ -91,9 +91,7 @@ def item_string_to_wdq_list(items: str) -> list:
     """
 
     items_list = items.splitlines()  # String usually from HTML <textarea>, lots of whitespace
-    print('items list: ' + str(items_list))
     items_list = list(filter(None, [x.strip() for x in items_list]))  # Strip whitespace, empty items
-    print('items list: ' + str(items_list))
 
     for n, item in enumerate(items_list):
 
@@ -105,7 +103,7 @@ def item_string_to_wdq_list(items: str) -> list:
         elif re.match(r'^[Qq]\d+$', item) is not None:
             items_list[n] = 'wd:' + item
 
-        # 123 - Valid number, no Q or wd
+        # 123 - Valid number, no Q or wd, treat as Wikidata qid
         elif re.match(r'^\d+$', item) is not None:
             items_list[n] = 'wd:Q' + item
 
@@ -124,6 +122,7 @@ def item_string_to_wdq_list(items: str) -> list:
                     items_list[n:n] = [x for x in pile_list]
             else:
                 items_list.pop(n)  # Silently fail, remove the ID from list
+
         # en:Kygo
         elif re.match(r'^[a-z]+:.+$', item) is not None:
             m = re.match(r"^(?P<lang>[-a-z]+):(?P<title>.+)$", item)
