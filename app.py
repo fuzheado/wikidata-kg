@@ -33,10 +33,13 @@ SELECT ?item1 ?image ?item1Label ?item2 ?image2 ?item2Label ?edgeLabel WHERE {{
 kg_sparql_template_in_url = 'https://query.wikidata.org/embed.html#%23defaultView%3AGraph%0ASELECT%20%3Fitem1%20' \
                             '%3Fimage%20%3Fitem1Label%20%3Fitem2%20%3Fimage2%20%3Fitem2Label%20%3FedgeLabel%20WHERE' \
                             '%20%7B%0AVALUES%20%3Fitem1%20%7B{}%7D%0AVALUES%20%3Fitem2%20%7B{' \
-                            '}%7D%0A%3Fitem1%20%3Fprop%20%3Fitem2.%0A%3Fedge%20%3Fdummy%20%3Fprop%20%3B%20rdf%3Atype' \
+                            '}%7D%0A%3Fitem1%20%3Fprop%20%3Fitem2.%0A{}%3Fedge%20%3Fdummy%20%3Fprop%20%3B%20rdf%3Atype' \
                             '%20wikibase%3AProperty%0AOPTIONAL%20%7B%3Fitem1%20wdt%3AP18%20%3Fimage%7D%0AOPTIONAL%20' \
                             '%7B%3Fitem2%20wdt%3AP18%20%3Fimage2%7D%0ASERVICE%20wikibase%3Alabel%20%7B%20bd' \
                             '%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%7D%0A%7D '
+
+# MINUS { ?item1 {} ?item2 } w/newline
+minus_p_template = r'MINUS%20%7B%20%3Fitem1%20{}%20%3Fitem2%20%7D%0A'
 
 
 @app.route('/')
@@ -45,37 +48,68 @@ def form():
     # TODO - pass in links to common tools - Wikidata Query, Pagepile, Petscan
 
 
-def redirect_to_kg(items, action='redirect'):
+def create_kg_url(q_items_list: list, p_exclusion_items_list: list = None):
     """
-    Take a string of items, one per line, turn them into a list of Q items and send to SPARQL
+    Create Wikidata Query - Knowledge Graph URL
     """
-    # TODO Provide option to interpret raw numbers as Pagepile IDs or QIDs
+    quoted_items = urllib.parse.quote(' '.join(q_items_list))
 
-    # Convert textarea submission to list of wd:Q123 items
-    q_list = qutils.item_string_to_wdq_list(items)
-    quoted_items = ' '.join(q_list)
+    # Format the P exclusions list items using the template, then into a string
+    p_exclusion_items = ''.join([''.join(minus_p_template.format(x)) for x in p_exclusion_items_list])
 
-    target_url = kg_sparql_template_in_url.format(quoted_items, quoted_items)
-    if action == 'print':
-        print(target_url)
-    else:
-        # Redirect user's browser to Wikidata Query
-        return redirect(target_url)
+    target_url = kg_sparql_template_in_url.format(quoted_items, quoted_items, p_exclusion_items)
+
+    # Return URL for Wikidata Query
+    return target_url
+
+
+def redirect_to_kg(q_items_list: list, p_exclusion_items_list: list = None):
+    """
+    Redirect items to Wikidata Query site
+    """
+    # Redirect user's browser to Wikidata Query
+    return redirect(create_kg_url(q_items_list, p_exclusion_items_list))
 
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
-    textarea_content = None
+    items_content = None
+    exclusions_content = None
+    p_exclusions_content = None
+    action = "process"  # Default: process the graph
+
     if request.method == "POST":
-        textarea_content = request.form['items']
+        items_content = request.form['items']
+        exclusions_content = request.form['exclusions']
+        p_exclusions_content = request.form['property_exclusions']
+        action = request.form['action']
     elif request.method == "GET":
         if request.args.get('items'):
-            textarea_content = request.args['items']
+            items_content = request.args['items']
+            exclusions_content = request.args['exclusions']
+            p_exclusions_content = request.args['property_exclusions']
+            action = request.args['action']
     else:
         return 'No valid GET or POST request'
 
-    # [x for x in l1 if x not in exclusions]
-    return redirect_to_kg(textarea_content)
+    # Convert/expand items
+    q_items_list = qutils.item_string_to_wdq_list(items_content)
+
+    # Convert/expand exclusions
+    exclusions_list = qutils.item_string_to_wdq_list(exclusions_content)
+    p_exclusions_list = qutils.item_string_to_p_list(p_exclusions_content)
+
+    final_list = [x for x in q_items_list if x not in exclusions_list]
+
+    if action == 'process':
+        return redirect_to_kg(final_list, p_exclusions_list)
+    elif action == 'print':
+        return 'Request URL: {} \nKG URL: {}\nURL: {}'.format(create_kg_url(final_list, p_exclusions_list),
+                                                             request.query_string,
+                                                              request.url
+                                                              )
+    else:
+        return 'No valid GET or POST request'
 
 
 if __name__ == '__main__':

@@ -67,7 +67,7 @@ def wikititle_to_qid(lang: str, title: str) -> str:
 
     if 'missing' in data['query']['pages'][0]:
         if data['query']['pages'][0]['missing'] is True:
-            print('wikititle_to_qid: API returned missing')
+            print('wikititle_to_qid: API returned missing for '+lang+':'+title)
             return None
 
     if 'pageprops' in data['query']['pages'][0]:
@@ -119,7 +119,7 @@ def item_string_to_wdq_list(items: str) -> list:
                     items_list.pop(n)  # Remove Pagepile ID from list, prep for insertion
                     # Use list slicer to insert Pagepile-expanded Wikidata items
                     # https://stackoverflow.com/questions/3748063/what-is-the-syntax-to-insert-one-list-into-another-list-in-python
-                    items_list[n:n] = [x for x in pile_list]
+                    items_list[n:n] = ['wd:' + x for x in pile_list]
             else:
                 items_list.pop(n)  # Silently fail, remove the ID from list
 
@@ -131,11 +131,58 @@ def item_string_to_wdq_list(items: str) -> list:
             if qid is not None:
                 items_list[n] = 'wd:' + qid  # Replace en:Foobar with wd:Q860
             else:
-                items_list.pop(n)  # Silently fail, remove the entry from list
+                # Silently fail, remove the entry from list
+                print ('Before: '+str(items_list))
+                try:
+                    del items_list[n]
+                except IndexError:
+                    print("API lookup: index Out of Range")
+                print ('After: '+str(items_list))
 
         # No patterns match at all, silently get rid of bogus entry
         else:
-            print("Popping item that didn't match anything: " + item)
+            items_list.pop(n)  # Silently fail, remove the ID from list
+
+    # return items_list
+    # Assuming order does not matter, de-duplicate by turning into a set
+    return list(set(items_list))
+
+
+def item_string_to_p_list(items: str) -> list:
+    """
+    Convert newline separated list of possible discrete items and make a list of Wikidata P numbers
+    wdt:P123
+    p:P123
+    P123
+
+    Return a list of P items in wdt:P123 format, ready to use in SPARQL
+    ['wdt:P123','wd:P456','wd:P789']
+
+    This function will also de-duplicate the list, so order will NOT be preserved in any way
+    """
+
+    if items.strip() is None:
+        return None
+
+    items_list = items.splitlines()  # String usually from HTML <textarea>, lots of whitespace
+    items_list = list(filter(None, [x.strip() for x in items_list]))  # Strip whitespace, empty items
+
+    for n, item in enumerate(items_list):
+
+        # wdt:P123 - wdt prefix on valid P number
+        if re.match(r'^wdt:[Pp]\d+$', item) is not None:
+            continue
+
+        # P123 - Valid P number, no wdt
+        elif re.match(r'^[Pp]\d+$', item) is not None:
+            items_list[n] = 'wdt:' + item
+
+        # 123 - Valid number, no P or wdt, treat as Wikidata property
+        elif re.match(r'^\d+$', item) is not None:
+            items_list[n] = 'wdt:P' + item
+
+        # No patterns match at all, silently get rid of bogus entry
+        else:
             items_list.pop(n)  # Silently fail, remove the ID from list
 
     # return items_list
@@ -163,14 +210,36 @@ if __name__ == '__main__':
     en:The White House
     """
     items = """
-    pagepile:27688
+    pagepile:27700
     """
     # print('** Testing items: ')
-    print(item_string_to_wdq_list(items))
-    # print(pagepile_id_to_qid_list(27688))
-    '''
-    print(wikititle_to_qid("en", "Kygo"))
-    print(wikititle_to_qid("en", "Columbia_University"))
-    print(wikititle_to_qid("en", "Barack Obama"))
-    print(wikititle_to_qid("en", "Barack Hussein Obama"))
-    '''
+    # print(item_string_to_wdq_list(items))
+    # print(pagepile_id_to_qid_list(27700))
+
+    items = """
+    wdt:P170
+    P31
+    3634
+    """
+    print(item_string_to_p_list(items))
+
+    p_exclusion_items_list = item_string_to_p_list(items)
+    minus_p_template = r'MINUS {{ ?item1 {} ?item2 }}'
+    # [print(minus_p_template.format(x)) for x in item_string_to_p_list(items)]
+    # p_exclusion_items=str(None)
+    # [foo.join(minus_p_template.format(x)) for x in item_string_to_p_list(items)]
+
+    p_exclusion_items = '\n'.join([''.join(minus_p_template.format(x)) for x in p_exclusion_items_list])
+
+    # print ('p_exclusion_items: '+str(p_exclusion_items))
+
+    # print(minus_p_template)
+    # print(wikititle_to_qid("en", "Ballet flat"))
+    # print(wikititle_to_qid("en", "Stiletto (shoe)"))
+
+    test_items='''\
+en:Stiletto (foobar) 
+en:Shoe 
+en:High-heel shoe
+en:Ballet flat'''
+    item_string_to_wdq_list(test_items)

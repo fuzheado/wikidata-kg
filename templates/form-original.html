@@ -21,7 +21,7 @@
 <nav class="navbar navbar-inverse">
   <div class="container-fluid">
     <div class="navbar-header">
-      <a class="navbar-brand" href="#">Wikidata Knowledge Grapher</a>
+      <a class="navbar-brand" href="#">Wikidata KG</a>
     </div>
     <ul class="nav navbar-nav">
       <li class="active"><a href="#">Home</a></li>
@@ -36,9 +36,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-  <div class="row">
-    <div class="col-lg-6">
+<div class="jumbotron card card-block">
 Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line, with wd: prefix.
     Example:
     <ul>
@@ -46,43 +44,24 @@ Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line,
         <a href="/submit?items=wd:Q7186%20wd:Q169470%20wd:Q44585%20wd:Q38104">Marie Curie</a>
         </li>
     </ul>
-    </div>
-  </div>
-<form action="{{ url_for('submit') }}" method=get>
-    <div class="input-group mb-3p">
-        <label for="items">Objects (Wikidata items, Wikipedia article titles or Pagepile IDs) one per line</label>
-        <br>
-        <textarea name="items" placeholder="Examples:
+    <div class="input-group input-group mb-3p">
+        <form action="{{ url_for('submit') }}" method=get>
+            <label>
+<textarea name="items" placeholder="Enter objects (Wikidata items, Wikipedia article titles or Pagepile IDs) one per line. Examples:
 Q5
 wd:Q1028181
 en:Baton Rouge
 pagepile:27688
 "></textarea>
+<textarea name="exclusions" placeholder="Enter objects to exclude from the graph"></textarea>
+<textarea name="property_exclusions" placeholder="Enter properties to exclude from the graph, i.e. P31"></textarea>
+            </label>
+            <input type="submit" name="action" value="process">
+            <input type="submit" name="action" value="print">
+            <input type="reset">
+        </form>
     </div>
-    <div class="input-group mb-3p">
-        <label for="exclusions">Objects to exclude from the graph</label>
-        <br>
-        <textarea name="exclusions" placeholder="Examples:
-Q5
-wd:Q1028181
-en:Baton Rouge
-pagepile:27688
-"></textarea>
-    </div>
-    <div class="input-group mb-3p">
-        <label for="property_exclusions">Properties to exclude from the graph</label>
-        <br>
-        <textarea name="property_exclusions" placeholder="Example:
-P31"></textarea>
-    </div>
-    <div class="input-group mb-3p">
-        <button type="submit" name="action" value="process">Graph</button>
-        <button type="submit" name="action" value="print">Print URL</button>
-        <button type="reset">Reset</button>
-    </div>
-</form>
 </div>
-
 {% endblock %}
 
 {% block footer %}
