@@ -21,7 +21,7 @@
 <nav class="navbar navbar-inverse">
   <div class="container-fluid">
     <div class="navbar-header">
-      <a class="navbar-brand" href="#">Wikidata Knowledge Grapher</a>
+      <a class="navbar-brand" href="/">Wikidata Knowledge Grapher</a>
     </div>
     <ul class="nav navbar-nav">
       <li class="active"><a href="#">Home</a></li>
@@ -39,7 +39,8 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-6">
-Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line, with wd: prefix.
+        <H1>Wikidata Knowledge Grapher</H1>
+        <p class="lead">Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line, with wd: prefix.</p>
     Example:
     <ul>
         <li>
@@ -76,9 +77,11 @@ pagepile:27688
 P31"></textarea>
     </div>
     <div class="input-group mb-3p">
-        <button type="submit" name="action" value="process">Graph</button>
-        <button type="submit" name="action" value="print">Print URL</button>
-        <button type="reset">Reset</button>
+        <div class="btn-group" role="group" aria-label="Basic example">
+            <button class="btn-lg btn-primary" type="submit" name="action" value="process">Graph</button>
+            <button class="btn-lg btn-default" type="submit" name="action" value="print">Print URL</button>
+            <button class="btn-lg btn-default" type="reset">Reset</button>
+        </div>
     </div>
 </form>
 </div>

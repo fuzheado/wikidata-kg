@@ -2,17 +2,24 @@ import requests
 import re
 
 """
-Utility functions to help with Wikidata Q items, Pagepiles and Wikipedia
+Utility functions to help with Wikidata Q items, Pagepiles and Wikipedia articles
+by Andrew Lih (User:Fuzheado)
 """
 
+# Location of the wiki pagepile API
 pagepile_api_url = 'https://tools.wmflabs.org/pagepile/api.php'
+
+# Location of the API for Wikipedia projects, substituting language for {}, eg. en, fr, jp
+# Suggested usage: wikipedia_api_url_template.format('en')
+wikipedia_api_url_template = 'https://{}.wikipedia.org/w/api.php'
 
 
 def pagepile_id_to_qid_list(pagepile_id: int) -> list:
-    """Convert a wiki pagepile ID (int) to a list of Wikidata Q items
+    """
+    Convert a wiki pagepile ID (int) to a list of Wikidata Q items
     12345 -> ['Q123','Q456','Q789']
 
-    Currently only works only for Wikidata-specific pagepiles
+    Only works only for Wikidata-specific pagepiles, ie. a list of Q items
     """
     try:
         params = {'id': pagepile_id,
@@ -52,60 +59,73 @@ def wikititle_to_qid(lang: str, title: str) -> str:
                   'ppprop': 'wikibase_item',
                   'titles': title}
 
-        request_url = 'https://' + lang + '.wikipedia.org/w/api.php'
+        # Create the API request URL
+        request_url = wikipedia_api_url_template.format(lang)
+
+        # Lookup en:Foo against the Wikipedia edition
         r = requests.get(request_url, params)
         r.raise_for_status()
         data = r.json()
     except ValueError:
-        print('Failed to get result')
-        return None
+        print('wikititle_to_qid: Failed to get result')
+        return ''
 
     if 'query' not in data:
-        raise ValueError("No query content in given data")
+        raise ValueError("wikititle_to_qid: No query content in given data")
     if 'pages' not in data['query']:
-        raise ValueError("No pages in given data")
+        raise ValueError("wikititle_to_qid: No pages in given data")
 
     if 'missing' in data['query']['pages'][0]:
         if data['query']['pages'][0]['missing'] is True:
-            print('wikititle_to_qid: API returned missing for '+lang+':'+title)
-            return None
+            print('wikititle_to_qid: API returned missing for ' + lang + ':' + title)
+            return ''
 
     if 'pageprops' in data['query']['pages'][0]:
         if 'wikibase_item' in data['query']['pages'][0]['pageprops']:
             return data['query']['pages'][0]['pageprops']['wikibase_item']
 
-    return None
+    return ''
 
 
 def item_string_to_wdq_list(items: str) -> list:
-    """Take a newline separated list of possible discrete items and make a list of Wikidata Q numbers
+    """
+    Take a newline separated list of discrete items and make a list of valid Wikidata Q numbers
     wd:Q123
     Q123
     pagepile:12345
     en:Kygo
 
-    Return a list of Q items in wd:Q123 format, ready to concatenate together for use in SPARQL
+    Returns a list of Q items in wd:Q123 format, ready to concatenate together for use in SPARQL
     ['wd:Q123','wd:Q456','wd:Q789']
 
     This function will also de-duplicate the list, so order will NOT be preserved in any way
     """
 
-    items_list = items.splitlines()  # String usually from HTML <textarea>, lots of whitespace
-    items_list = list(filter(None, [x.strip() for x in items_list]))  # Strip whitespace, empty items
+    if not items or items.strip() is None:
+        return []
 
+    # String usually from HTML <textarea>, lots of whitespace
+    items_list = items.splitlines()
+    # Strip whitespace, empty items
+    items_list = list(filter(None, [x.strip() for x in items_list]))
+    # TODO tolerate/strip junk or comment after a Q number like:
+    # wd:Q123  #foobar
+    # probably make this a function so it can be called from other function too
+
+    result_list = []
     for n, item in enumerate(items_list):
 
         # wd:Q123 - wd prefix on valid q number
         if re.match(r'^wd:[Qq]\d+$', item) is not None:
-            continue
+            result_list.append(item)
 
         # Q123 - Valid Q number, no wd
         elif re.match(r'^[Qq]\d+$', item) is not None:
-            items_list[n] = 'wd:' + item
+            result_list.append('wd:' + item)
 
-        # 123 - Valid number, no Q or wd, treat as Wikidata qid
+        # 123 - All numbers, no Q or wd, treat as Wikidata qid
         elif re.match(r'^\d+$', item) is not None:
-            items_list[n] = 'wd:Q' + item
+            result_list.append('wd:Q' + item)
 
         # pagepile:123 - expand this via API to Q numbers
         elif re.match(r'^pagepile:\d+$', item):
@@ -116,36 +136,23 @@ def item_string_to_wdq_list(items: str) -> list:
                 # Currently only works on Wikidata Pagepile
                 pile_list = pagepile_id_to_qid_list(pile_id)
                 if pile_list:
-                    items_list.pop(n)  # Remove Pagepile ID from list, prep for insertion
-                    # Use list slicer to insert Pagepile-expanded Wikidata items
-                    # https://stackoverflow.com/questions/3748063/what-is-the-syntax-to-insert-one-list-into-another-list-in-python
-                    items_list[n:n] = ['wd:' + x for x in pile_list]
+                    result_list.append(['wd:' + x for x in pile_list])
             else:
                 items_list.pop(n)  # Silently fail, remove the ID from list
 
-        # en:Kygo
-        elif re.match(r'^[a-z]+:.+$', item) is not None:
+        # en:Kygo - language specific article, could be redirect
+        elif re.match(r'^[-a-z]+:.+$', item) is not None:
             m = re.match(r"^(?P<lang>[-a-z]+):(?P<title>.+)$", item)
             wiki_dict = m.groupdict()  # Extract regex matches into dict
             qid = wikititle_to_qid(wiki_dict['lang'], wiki_dict['title'])
-            if qid is not None:
-                items_list[n] = 'wd:' + qid  # Replace en:Foobar with wd:Q860
-            else:
-                # Silently fail, remove the entry from list
-                print ('Before: '+str(items_list))
-                try:
-                    del items_list[n]
-                except IndexError:
-                    print("API lookup: index Out of Range")
-                print ('After: '+str(items_list))
+            if qid:
+                result_list.append('wd:' + qid)  # Replace en:Foobar with wd:Q860
 
-        # No patterns match at all, silently get rid of bogus entry
-        else:
-            items_list.pop(n)  # Silently fail, remove the ID from list
+        # No patterns match at all, silently skip bogus entry, continue loop
 
     # return items_list
     # Assuming order does not matter, de-duplicate by turning into a set
-    return list(set(items_list))
+    return list(set(result_list))
 
 
 def item_string_to_p_list(items: str) -> list:
@@ -161,11 +168,14 @@ def item_string_to_p_list(items: str) -> list:
     This function will also de-duplicate the list, so order will NOT be preserved in any way
     """
 
-    if items.strip() is None:
-        return None
+    if not items or items.strip() is None:
+        return []
 
     items_list = items.splitlines()  # String usually from HTML <textarea>, lots of whitespace
     items_list = list(filter(None, [x.strip() for x in items_list]))  # Strip whitespace, empty items
+    # TODO tolerate/strip junk or comment after a P number like:
+    # wdt:P123  #foobar
+    # probably make this a function so it can be called from other function too
 
     for n, item in enumerate(items_list):
 
@@ -191,55 +201,14 @@ def item_string_to_p_list(items: str) -> list:
 
 
 if __name__ == '__main__':
-    """
-    print('** Testing valid pagepile id for Wikidata: ' + str(27684))
-    print(pagepile_id_to_qid_list(27684))
-    print('** Testing invalid pagepile id for Wikidata: ' + str(27680))
-    print(pagepile_id_to_qid_list(27680))
-    """
-
-    items = """
-    wd:Q123
-    Q456
-    pagepile:27684
-    Q42
-    1234
-    en:Kygo
-    en:Barack Obama
-    en:Columbia University
-    en:The White House
-    """
-    items = """
-    pagepile:27700
-    """
-    # print('** Testing items: ')
-    # print(item_string_to_wdq_list(items))
-    # print(pagepile_id_to_qid_list(27700))
-
-    items = """
-    wdt:P170
-    P31
-    3634
-    """
-    print(item_string_to_p_list(items))
-
-    p_exclusion_items_list = item_string_to_p_list(items)
-    minus_p_template = r'MINUS {{ ?item1 {} ?item2 }}'
-    # [print(minus_p_template.format(x)) for x in item_string_to_p_list(items)]
-    # p_exclusion_items=str(None)
-    # [foo.join(minus_p_template.format(x)) for x in item_string_to_p_list(items)]
-
-    p_exclusion_items = '\n'.join([''.join(minus_p_template.format(x)) for x in p_exclusion_items_list])
-
-    # print ('p_exclusion_items: '+str(p_exclusion_items))
-
-    # print(minus_p_template)
-    # print(wikititle_to_qid("en", "Ballet flat"))
-    # print(wikititle_to_qid("en", "Stiletto (shoe)"))
-
-    test_items='''\
+    print('qutils: a set of functions for working Wikidata Q items and Pagepile')
+    test_items = '''\
 en:Stiletto (foobar) 
 en:Shoe 
 en:High-heel shoe
 en:Ballet flat'''
-    item_string_to_wdq_list(test_items)
+    print('Example:')
+    print('Raw items:')
+    print(test_items)
+    print('Expanded to Wikidata Q items:')
+    print(item_string_to_wdq_list(test_items))
