@@ -141,12 +141,46 @@ def submit():
         return 'No valid GET or POST request'
 
 
+@app.route('/creator')
+def creator_form():
+    return render_template('creator-form.html')
+
+
+@app.route('/submit-creator', methods=['GET', 'POST'])
+def submit_creator():
+    items_content = None
+    action = "process"  # Default: process the graph
+
+    if request.method == "POST":
+        if request.form.get('items'):
+            items_content = request.form['items']
+            action = request.form['action']
+        else:
+            return 'POST request had no valid request.form content'
+    elif request.method == "GET":
+        if request.args.get('items'):
+            items_content = request.args['items']
+            action = request.args['action']
+        else:
+            return 'GET request had no valid request.args content'
+    else:
+        return 'No valid GET or POST request'
+
+    # Convert/expand items from interface into Wikidata Q items list
+    # q_items_list = qutils.item_string_to_wdq_list(items_content)
+    print (items_content)
+    # TODO - check items to make sure there is but one Q number
+
+    if action == 'process':
+        return redirect("/creator/" + items_content)
+    else:
+        return 'No valid GET or POST request'
+
+
 @app.route('/creator/<string:qid>', methods=['GET'])
 def creator_kg(qid):
     # TODO - some sanity checking of qid
     # assert isinstance(qid, object)
-    print (qid)
-    print (kg_creator_sparql_template_in_url.format(qid))
     return redirect(kg_creator_sparql_template_in_url.format(qid))
 
 

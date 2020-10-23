@@ -1,0 +1,79 @@
+{% extends 'bootstrap/base.html' %}
+
+{% block styles %}
+{{super()}}
+<link rel="stylesheet"
+      href="{{url_for('.static', filename='my-style.css')}}">
+{% endblock %}
+
+{% block javascript %}
+    <script type="text/javascript">
+        {% include "myscript.js" %}
+    </script>
+    <!-- The contents of myscript.js will be loaded inside the script tag -->
+{% endblock %}
+
+{% block title %}
+    {% if title %}{{ title }} - Wikidata KG{% else %}Wikidata KG{% endif %}
+{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/">Wikidata Knowledge Grapher</a>
+    </div>
+    <ul class="nav navbar-nav">
+      <li class="active"><a href="#">Home</a></li>
+      <li><a href="#">About</a></li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right">
+      <li><a href="#"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+    </ul>
+  </div>
+</nav>
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-lg-6">
+        <H1>Wikidata Knowledge Grapher - Creator</H1>
+        <p class="lead">Create Wikidata knowledge graph of an artist, their works and depictions</p>
+        <p class="lead">Details: Given a Wikidata qid, find works with creator (P170) set to the qid and return depictions (P180)</p>
+    Example:
+    <ul>
+        <li>
+        <a href="/creator/Q41264">Johannes Vermeer</a>
+        </li>
+        <li>
+        <a href="/creator/Q173223">Mary Cassatt</a>
+        </li>
+    </ul>
+    </div>
+  </div>
+<form action="{{ url_for('submit_creator') }}" class="form-horizontal" method=get>
+    <div class="input-group mb-3p">
+        <label for="items">Enter Wikidata Q number of an artist/creator (Example: Q173223)</label>
+        <br>
+        <input type="text" id="creatoritems" name="items" placeholder="Example: Q173223">
+        <br>
+    </div>
+    <div class="input-group mb-3p">
+        <div class="btn-group" role="group" aria-label="Basic example">
+            <button class="btn-lg btn-primary" type="submit" name="action" value="process">Graph</button>
+            <button class="btn-lg btn-default" type="reset">Reset</button>
+        </div>
+    </div>
+</form>
+</div>
+
+{% endblock %}
+
+{% block footer %}
+    <div class="container">
+      <p class="m-0 text-center text-white">Contact: Andrew Lih</p>
+    </div>
+    <!-- /.container -->
+{% endblock %}
