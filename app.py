@@ -3,7 +3,7 @@ from flask_bootstrap import Bootstrap
 import os
 import yaml
 import urllib.parse
-import requests
+# import requests
 import qutils  # Custom library
 
 app = Flask(__name__)
@@ -31,6 +31,20 @@ kg_sparql_template_in_url = \
 # MINUS { ?item1 {} ?item2 } w/newline
 minus_p_template = r'MINUS%20%7B%20%3Fitem1%20{}%20%3Fitem2%20%7D%0A'
 
+# URL of SPARQL query to show works of a given creator (P170), and what is depicted in those works (P180)
+kg_creator_sparql_template_in_url = \
+    'https://query.wikidata.org/embed.html#%23%20Artists%20and%20their%20works%20depictions%0A' \
+    '%23defaultView%3AGraph%0ASELECT%20%3Fitem1%20%3Fimage1%20%3Fitem1Label%20%3Fitem2%20%3Fimage2%20' \
+    '%3Fitem2Label%20%3Fsize%20%3Frgb%20%0AWHERE%20%0A%7B%0A%20VALUES%20%3Fcreator%20%7B%20wd%3A{}%20%7D%0A' \
+    '%20%7B%20%23%20Get%20works%20and%20instances%0A%20%20VALUES%20%3Frgb%20%7B%20"FFBD33"%20%7D%0A%20%20' \
+    'VALUES%20%3Fsize%20%7B%202%20%7D%0A%20%20%3Fitem1%20wdt%3AP170%20%3Fcreator%20.%0A%20%20%3Fitem1%20' \
+    'wdt%3AP31%20%3Fitem2%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem1%20wdt%3AP18%20%3Fimage1.%20%7D%0A%20%7D%20%0A%20' \
+    'UNION%0A%20%7B%20%23%20Depictions%0A%20%20VALUES%20%3Frgb%20%7B%20"fff033"%20%7D%0A%20%20' \
+    'VALUES%20%3Fsize%20%7B%201%20%7D%0A%20%20%3Fitem1%20wdt%3AP170%20%3Fcreator%20.%0A%20%20%3Fitem1%20' \
+    'wdt%3AP180%20%3Fitem2%20.%0A%20%20OPTIONAL%20%7B%20%3Fitem1%20wdt%3AP18%20%3Fimage1.%20%7D%0A%20%7D%0A%20' \
+    'SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20"%5B' \
+    'AUTO_LANGUAGE%5D%2Cen".%20%7D%0A%7D'
+
 
 @app.route('/')
 def form():
@@ -46,10 +60,16 @@ def create_kg_url(q_items_list: list, p_exclusion_items_list: list = None) -> st
     Sample p_exclusion_items_list - ['wdt:P123','wd:P456','wd:P789']
     """
     # Splice together list of wd:Q123 items and URL encode them into a string
-    quoted_items = urllib.parse.quote(' '.join(q_items_list))
+    if q_items_list:
+        quoted_items = urllib.parse.quote(' '.join(q_items_list))
+    else:
+        return ''
 
     # Format the P exclusions list items using the template, then put into a string
-    p_exclusion_items = ''.join([''.join(minus_p_template.format(x)) for x in p_exclusion_items_list])
+    if p_exclusion_items_list:
+        p_exclusion_items = ''.join([''.join(minus_p_template.format(x)) for x in p_exclusion_items_list])
+    else:
+        p_exclusion_items = ''
 
     # Form a URL for query.wikidata.org
     target_url = kg_sparql_template_in_url.format(quoted_items, quoted_items, p_exclusion_items)
@@ -119,6 +139,15 @@ def submit():
         return None
     else:
         return 'No valid GET or POST request'
+
+
+@app.route('/creator/<string:qid>', methods=['GET'])
+def creator_kg(qid):
+    # TODO - some sanity checking of qid
+    # assert isinstance(qid, object)
+    print (qid)
+    print (kg_creator_sparql_template_in_url.format(qid))
+    return redirect(kg_creator_sparql_template_in_url.format(qid))
 
 
 if __name__ == '__main__':

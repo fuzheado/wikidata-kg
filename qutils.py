@@ -152,6 +152,7 @@ def item_string_to_wdq_list(items: str) -> list:
 
     # return items_list
     # Assuming order does not matter, de-duplicate by turning into a set
+    # print (result_list)
     return list(set(result_list))
 
 
