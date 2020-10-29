@@ -45,6 +45,25 @@ kg_creator_sparql_template_in_url = \
     'SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20"%5B' \
     'AUTO_LANGUAGE%5D%2Cen".%20%7D%0A%7D'
 
+# URL of SPARQL
+kg_filmmaker_sparql_template_in_url = \
+    'https://query.wikidata.org/embed.html#' \
+    '%23%20Film%2FTV%20creator%2Fproducer%2Fdirector%20and%20the%20cast%20members%20they%20have%20worked%20with%0A' \
+    '%23defaultView%3AGraph%0ASELECT%20%3Fitem1%20%3Fimage1%20%3Fitem1Label%20%3Fitem2%20%3Fimage2%20' \
+    '%3Fitem2Label%20%3FedgeLabel%20%3Fsize%20%3Frgb%20%0AWHERE%20%0A%7B%0A%20%20%20%20VALUES%20%3Fcreator%20' \
+    '%7B%20wd%3A{}%20%7D%0A%20%20%20%20%7B%20%23%20Get%20works%20and%20instances%0A%20%20%20%20%20%20%20%20' \
+    'VALUES%20%3Frgb%20%7B%20"FFBD33"%20%7D%0A%20%20%20%20%20%20%20%20VALUES%20%3Fsize%20%7B%202%20%7D%0A' \
+    '%20%20%20%20%20%20%20%20%3Fitem1%20wdt%3AP170%20%7C%20wdt%3AP57%20%7C%20wdt%3AP162%20%3Fcreator%20.%0A' \
+    '%20%20%20%20%20%20%20%20%3Fitem1%20wdt%3AP31%20%3Fitem2%20.%0A%20%20%20%20%20%20%20%20OPTIONAL' \
+    '%20%7B%20%3Fitem1%20wdt%3AP18%20%3Fimage1.%20%7D%0A%20%20%20%20%20%20%20%20%23%20OPTIONAL%20%7B' \
+    '%20%3Fitem2%20wdt%3AP18%20%3Fimage2.%20%7D%0A%20%20%20%20%7D%20%0A%20%20%20%20UNION%0A%20%20%20%20%7B' \
+    '%20%23%20Actors%0A%20%20%20%20%20%20%20%20VALUES%20%3Frgb%20%7B%20"fff033"%20%7D%0A%20%20%20%20%20%20%20%20' \
+    'VALUES%20%3Fsize%20%7B%201%20%7D%0A%20%20%20%20%20%20%20%20%3Fitem1%20wdt%3AP170%20%7C%20wdt%3AP57%20%7C%20' \
+    'wdt%3AP162%20%3Fcreator%20.%0A%20%20%20%20%20%20%20%20%3Fitem1%20wdt%3AP161%20%3Fitem2%20.%0A%20%20%20%20' \
+    '%20%20%20%20OPTIONAL%20%7B%20%3Fitem1%20wdt%3AP18%20%3Fimage1.%20%7D%0A%20%20%20%20%20%20%20%20%23%20OPTIONAL' \
+    '%20%7B%20%3Fitem2%20wdt%3AP18%20%3Fimage2.%20%7D%0A%20%20%20%20%7D%0A%20%20%20%20SERVICE%20wikibase%3Alabel%20' \
+    '%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20"%5BAUTO_LANGUAGE%5D%2Cen".%20%7D%0A%7D'
+
 
 @app.route('/')
 def form():
@@ -141,6 +160,10 @@ def submit():
         return 'No valid GET or POST request'
 
 
+#
+# Creator
+#
+
 @app.route('/creator')
 def creator_form():
     return render_template('creator-form.html')
@@ -168,7 +191,7 @@ def submit_creator():
 
     # Convert/expand items from interface into Wikidata Q items list
     # q_items_list = qutils.item_string_to_wdq_list(items_content)
-    print (items_content)
+    print(items_content)
     # TODO - check items to make sure there is but one Q number
 
     if action == 'process':
@@ -182,6 +205,53 @@ def creator_kg(qid):
     # TODO - some sanity checking of qid
     # assert isinstance(qid, object)
     return redirect(kg_creator_sparql_template_in_url.format(qid))
+
+
+#
+# Film maker
+#
+
+@app.route('/filmmaker')
+def filmmaker_form():
+    return render_template('filmmaker-form.html')
+
+
+@app.route('/submit-filmmaker', methods=['GET', 'POST'])
+def submit_filmmaker():
+    items_content = None
+    action = "process"  # Default: process the graph
+
+    if request.method == "POST":
+        if request.form.get('items'):
+            items_content = request.form['items']
+            action = request.form['action']
+        else:
+            return 'POST request had no valid request.form content'
+    elif request.method == "GET":
+        if request.args.get('items'):
+            items_content = request.args['items']
+            action = request.args['action']
+        else:
+            return 'GET request had no valid request.args content'
+    else:
+        return 'No valid GET or POST request'
+
+    # Convert/expand items from interface into Wikidata Q items list
+    # q_items_list = qutils.item_string_to_wdq_list(items_content)
+    print(items_content)
+    # TODO - check items to make sure there is but one Q number
+
+    if action == 'process':
+        return redirect("/filmmaker/" + items_content)
+    else:
+        return 'No valid GET or POST request'
+
+
+@app.route('/filmmaker/<string:qid>', methods=['GET'])
+def filmmaker_kg(qid):
+    # TODO - some sanity checking of qid
+    # assert isinstance(qid, object)
+    return redirect(kg_filmmaker_sparql_template_in_url.format(qid))
 
 
 if __name__ == '__main__':

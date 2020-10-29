@@ -39,52 +39,27 @@
 <div class="container">
   <div class="row">
     <div class="col-lg-6">
-        <H1>Wikidata Knowledge Grapher</H1>
-        <p class="lead">Create knowledge graphs in Wikidata Query by specifying Q numbers, one per line, with wd: prefix.</p>
-        <p class="lead">Or, enter special modes:</p>
-            <ul>
-            <li><a href="/creator">Creator</a> mode to explore an artist's works and depicted themes.</li>
-            <li><a href="/filmmaker">Film maker</a> mode to explore the works and cast members of a film maker.</li>
-            </ul>
+        <H1>Wikidata Knowledge Grapher - Film maker</H1>
+        <p class="lead">Create Wikidata knowledge graph of an film maker, their works and cast members</p>
+        <p class="lead">Details: Given a Wikidata qid, find their works and return cast members (P161)</p>
     Example:
     <ul>
         <li>
-        <a href="/submit?items=wd%3AQ7186%0D%0Awd%3AQ169470%0D%0Awd%3AQ44585%0D%0Awd%3AQ38104%0D%0Aen%3APanthéon%0D%0Aen%3AWarsaw%0D%0Aen%3APoland%0D%0Aen%3AParis%0D%0Aen%3AFrance%0D%0A&exclusions=&property_exclusions=P530%0D%0A&action=process">Marie Curie</a>
+        <a href="/filmmaker/Q34816">Kathryn Bigelow</a>
         </li>
     </ul>
     </div>
   </div>
-<form action="{{ url_for('submit') }}" class="form-horizontal" method=get>
+<form action="{{ url_for('submit_filmmaker') }}" class="form-horizontal" method=get>
     <div class="input-group mb-3p">
-        <label for="items">Objects (Wikidata items, Wikipedia article titles or Pagepile IDs) one per line</label>
+        <label for="items">Enter Wikidata Q number of a film maker (Example: Q34816)</label>
         <br>
-        <textarea name="items" placeholder="Examples:
-Q5
-wd:Q1028181
-en:Baton Rouge
-pagepile:27688
-"></textarea>
-    </div>
-    <div class="input-group mb-3p">
-        <label for="exclusions">Objects to exclude from the graph</label>
+        <input type="text" id="creatoritems" name="items" placeholder="Example: Q34816">
         <br>
-        <textarea name="exclusions" placeholder="Examples:
-Q5
-wd:Q1028181
-en:Baton Rouge
-pagepile:27688
-"></textarea>
-    </div>
-    <div class="input-group mb-3p">
-        <label for="property_exclusions">Properties to exclude from the graph</label>
-        <br>
-        <textarea name="property_exclusions" placeholder="Example:
-P31"></textarea>
     </div>
     <div class="input-group mb-3p">
         <div class="btn-group" role="group" aria-label="Basic example">
             <button class="btn-lg btn-primary" type="submit" name="action" value="process">Graph</button>
-            <button class="btn-lg btn-default" type="submit" name="action" value="print">Print URL</button>
             <button class="btn-lg btn-default" type="reset">Reset</button>
         </div>
     </div>
